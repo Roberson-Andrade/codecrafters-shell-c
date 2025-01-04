@@ -1,5 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#define EXIT_CODE "exit 0"
 
 int main()
 {
@@ -16,8 +19,12 @@ int main()
   {
     input[strlen(input) - 1] = '\0';
 
-    printf("%s: command not found\n", input);
+    if(strcmp(input, EXIT_CODE) == 0) {
+      exit(0);
+      break;
+    }
 
+    printf("%s: command not found\n", input);
     printf("$ ");
   }
 
