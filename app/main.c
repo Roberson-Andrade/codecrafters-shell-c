@@ -3,6 +3,7 @@
 #include <string.h>
 
 #define EXIT_CODE "exit 0"
+#define ECHO_COMMAND "echo"
 
 int main()
 {
@@ -19,12 +20,21 @@ int main()
   {
     input[strlen(input) - 1] = '\0';
 
-    if(strcmp(input, EXIT_CODE) == 0) {
+    if (!strcmp(input, EXIT_CODE))
+    {
       exit(0);
       break;
     }
 
-    printf("%s: command not found\n", input);
+    if (!strncmp(input, ECHO_COMMAND, strlen(ECHO_COMMAND)))
+    {
+      printf("%s\n", input + strlen(ECHO_COMMAND) + 1);
+    }
+    else
+    {
+      printf("%s: command not found\n", input);
+    }
+
     printf("$ ");
   }
 
