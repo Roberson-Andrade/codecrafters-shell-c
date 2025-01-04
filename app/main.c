@@ -17,6 +17,8 @@ int main()
     input[strlen(input) - 1] = '\0';
 
     printf("%s: command not found\n", input);
+
+    printf("$ ");
   }
 
   return 0;
