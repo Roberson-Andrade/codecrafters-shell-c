@@ -52,7 +52,7 @@ int main()
       }
       else
       {
-        printf("%s: command not found", input + strlen(TYPE_COMMAND) + 1);
+        printf("%s: not found", input + strlen(TYPE_COMMAND) + 1);
       }
     }
     else if (!strncmp(input, ECHO_COMMAND, strlen(ECHO_COMMAND)))
