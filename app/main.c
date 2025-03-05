@@ -2,15 +2,33 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define EXIT_CODE "exit 0"
+#define EXIT_COMMAND "exit"
 #define ECHO_COMMAND "echo"
+#define TYPE_COMMAND "type"
+
+const char *SHELL_COMMANDS[3] = {EXIT_COMMAND, ECHO_COMMAND, TYPE_COMMAND};
+
+int is_shell_command(const char *input)
+{
+  int result = 0;
+
+  for (int i = 0; i < 3; i++)
+  {
+    if (!strncmp(input, SHELL_COMMANDS[i], strlen(SHELL_COMMANDS[i])))
+    {
+      result = 1;
+      break;
+    }
+  }
+
+  return result;
+}
 
 int main()
 {
   // Flush after every printf
   setbuf(stdout, NULL);
 
-  // Uncomment this block to pass the first stage
   printf("$ ");
 
   // Wait for user input
@@ -20,22 +38,33 @@ int main()
   {
     input[strlen(input) - 1] = '\0';
 
-    if (!strcmp(input, EXIT_CODE))
+    if (!strncmp(input, EXIT_COMMAND, strlen(EXIT_COMMAND)))
     {
       exit(0);
       break;
     }
 
-    if (!strncmp(input, ECHO_COMMAND, strlen(ECHO_COMMAND)))
+    if (!strncmp(input, TYPE_COMMAND, strlen(TYPE_COMMAND)))
     {
-      printf("%s\n", input + strlen(ECHO_COMMAND) + 1);
+      if (is_shell_command(input + strlen(TYPE_COMMAND) + 1) == 1)
+      {
+        printf("%s is a shell builtin", input + strlen(TYPE_COMMAND) + 1);
+      }
+      else
+      {
+        printf("%s: command not found", input + strlen(TYPE_COMMAND) + 1);
+      }
+    }
+    else if (!strncmp(input, ECHO_COMMAND, strlen(ECHO_COMMAND)))
+    {
+      printf("%s", input + strlen(ECHO_COMMAND) + 1);
     }
     else
     {
-      printf("%s: command not found\n", input);
+      printf("%s: command not found", input);
     }
 
-    printf("$ ");
+    printf("\n$ ");
   }
 
   return 0;
