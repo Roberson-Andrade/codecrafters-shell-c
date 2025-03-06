@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define EXIT_COMMAND "exit"
 #define ECHO_COMMAND "echo"
@@ -13,6 +15,7 @@ struct Command
 {
   char *name;
   char **args;
+  char *path;
   int argc;
 };
 
@@ -20,9 +23,8 @@ struct Command *parse_command(char *input)
 {
   struct Command *cmd = malloc(sizeof(struct Command));
 
-  int capacity = 5;
+  size_t capacity = 5;
   int argc = 0;
-  int is_command_name = 1;
 
   char **args = malloc(capacity * sizeof(char *));
 
@@ -30,7 +32,7 @@ struct Command *parse_command(char *input)
 
   while (token != NULL)
   {
-    if (argc == capacity)
+    if (argc == (int)capacity)
     {
       capacity *= 2;
       args = realloc(args, capacity * sizeof(char *));
@@ -39,13 +41,9 @@ struct Command *parse_command(char *input)
     char *token_ptr = malloc(strlen(token) + 1);
     strcpy(token_ptr, token);
 
-    if (is_command_name == 1)
+    if (argc == 0)
     {
       cmd->name = token_ptr;
-      token = strtok(NULL, " ");
-      is_command_name = 0;
-
-      continue;
     }
 
     args[argc] = token_ptr;
@@ -55,15 +53,33 @@ struct Command *parse_command(char *input)
     token = strtok(NULL, " ");
   }
 
+  args[argc] = NULL;
+
   cmd->args = args;
   cmd->argc = argc;
 
   return cmd;
 }
 
+void free_command(struct Command *cmd)
+{
+  if (cmd == NULL)
+    return;
+
+  for (int i = 0; i < cmd->argc; i++)
+  {
+    free(cmd->args[i]);
+  }
+
+  free(cmd->path);
+
+  free(cmd);
+}
+
 void printCommand(struct Command *cmd)
 {
   printf("name: %s\n", cmd->name);
+  printf("path: %s\n", cmd->path);
   printf("argc: %d\n", cmd->argc);
 
   for (int i = 0; i < cmd->argc; i++)
@@ -92,8 +108,6 @@ char *search_for_command_in_path(const char *command)
 {
   char *path = strdup(getenv("PATH"));
 
-  int count = 0;
-
   char *token = strtok(path, ":");
 
   do
@@ -110,12 +124,14 @@ char *search_for_command_in_path(const char *command)
     {
       return full_path;
     }
+
+    free(full_path);
   } while ((token = strtok(NULL, ":")) != NULL);
 
   return NULL;
 }
 
-void handleExit()
+void handle_exit()
 {
   exit(0);
 }
@@ -135,13 +151,9 @@ void handle_type(struct Command *cmd)
   }
   else
   {
-    char *command_path = search_for_command_in_path(command);
-
-    if (command_path != NULL)
+    if (cmd->path != NULL)
     {
-      printf("%s is %s", command, command_path);
-
-      free(command_path);
+      printf("%s is %s", command, cmd->path);
     }
     else
     {
@@ -160,18 +172,10 @@ void handle_echo(struct Command *cmd)
 
   for (int i = 0; i < cmd->argc; i++)
   {
-    char formatter[4];
-
     if (i == 0)
-    {
-      strcpy(formatter, "%s ");
-    }
+      printf("%s ", cmd->args[i]);
     else
-    {
-      strcpy(formatter, " %s");
-    }
-
-    printf(formatter, cmd->args[i]);
+      printf(" %s", cmd->args[i]);
   }
 
   printf("\n");
@@ -180,6 +184,24 @@ void handle_echo(struct Command *cmd)
 void handle_not_found(struct Command *cmd)
 {
   printf("%s: command not found", cmd->name);
+}
+
+void handle_external_command(struct Command *cmd)
+{
+  int pid = fork();
+
+  if (pid < 0)
+  {
+    printf("Something wrong happened...");
+    return;
+  }
+
+  if (pid == 0)
+  {
+    execv(cmd->path, cmd->args);
+  }
+
+  waitpid(pid, NULL, 0);
 }
 
 int main()
@@ -198,9 +220,17 @@ int main()
 
     struct Command *cmd = parse_command(input);
 
-    if (!strcmp(cmd->name, EXIT_COMMAND))
+    cmd->path = search_for_command_in_path(cmd->name);
+
+    // printCommand(cmd);
+
+    if (cmd->path != NULL)
     {
-      handleExit();
+      handle_external_command(cmd);
+    }
+    else if (!strcmp(cmd->name, EXIT_COMMAND))
+    {
+      handle_exit();
     }
     else if (!strcmp(cmd->name, TYPE_COMMAND))
     {
@@ -210,11 +240,15 @@ int main()
     {
       handle_echo(cmd);
     }
+    else if (!strcmp(cmd->name, ECHO_COMMAND))
+    {
+    }
     else
     {
       handle_not_found(cmd);
     }
 
+    free_command(cmd);
     printf("\n$ ");
   }
 
