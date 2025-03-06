@@ -91,7 +91,7 @@ int main()
         else
         {
 
-          printf("%s: command not found", command);
+          printf("%s: not found", command);
         }
       }
     }
