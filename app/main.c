@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define EXIT_COMMAND "exit"
 #define ECHO_COMMAND "echo"
@@ -22,6 +23,33 @@ int is_shell_command(const char *input)
   }
 
   return result;
+}
+
+char *search_for_command_in_path(const char *command)
+{
+  char *path = strdup(getenv("PATH"));
+
+  int count = 0;
+
+  char *token = strtok(path, ":");
+
+  do
+  {
+    char *full_path = malloc(strlen(token) + strlen(command) + 2);
+
+    strcpy(full_path, token);
+    strcat(full_path, "/");
+    strcat(full_path, command);
+
+    int is_executable = access(full_path, X_OK);
+
+    if (is_executable == 0)
+    {
+      return full_path;
+    }
+  } while ((token = strtok(NULL, ":")) != NULL);
+
+  return NULL;
 }
 
 int main()
@@ -46,13 +74,25 @@ int main()
 
     if (!strncmp(input, TYPE_COMMAND, strlen(TYPE_COMMAND)))
     {
-      if (is_shell_command(input + strlen(TYPE_COMMAND) + 1) == 1)
+      char *command = input + strlen(TYPE_COMMAND) + 1;
+
+      if (is_shell_command(command) == 1)
       {
-        printf("%s is a shell builtin", input + strlen(TYPE_COMMAND) + 1);
+        printf("%s is a shell builtin", command);
       }
       else
       {
-        printf("%s: not found", input + strlen(TYPE_COMMAND) + 1);
+        char *command_path = search_for_command_in_path(command);
+
+        if (command_path != NULL)
+        {
+          printf("%s is %s", command, command_path);
+        }
+        else
+        {
+
+          printf("%s: command not found", command);
+        }
       }
     }
     else if (!strncmp(input, ECHO_COMMAND, strlen(ECHO_COMMAND)))
