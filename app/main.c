@@ -240,9 +240,6 @@ int main()
     {
       handle_echo(cmd);
     }
-    else if (!strcmp(cmd->name, ECHO_COMMAND))
-    {
-    }
     else
     {
       handle_not_found(cmd);
