@@ -138,12 +138,12 @@ void handle_exit()
 
 void handle_type(struct Command *cmd)
 {
-  if (cmd->argc == 0)
+  if (cmd->argc < 2)
   {
     return;
   }
 
-  char *command = cmd->args[0];
+  char *command = cmd->args[1];
 
   if (is_shell_command(command) == 1)
   {
@@ -157,7 +157,6 @@ void handle_type(struct Command *cmd)
     }
     else
     {
-
       printf("%s: not found", command);
     }
   }
