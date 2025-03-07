@@ -222,10 +222,11 @@ int main()
 
     cmd->path = search_for_command_in_path(cmd->name);
 
-    // printCommand(cmd);
+    int should_print_new_line = 1;
 
     if (cmd->path != NULL)
     {
+      should_print_new_line = 0;
       handle_external_command(cmd);
     }
     else if (!strcmp(cmd->name, EXIT_COMMAND))
@@ -246,7 +247,11 @@ int main()
     }
 
     free_command(cmd);
-    printf("\n$ ");
+
+    if(should_print_new_line)
+      printf("\n");
+      
+    printf("$ ");
   }
 
   return 0;
