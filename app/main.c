@@ -53,6 +53,12 @@ struct Command *parse_command(char *input)
     token = strtok(NULL, " ");
   }
 
+  if (argc == (int)capacity)
+  {
+    capacity++;
+    args = realloc(args, capacity * sizeof(char *));
+  }
+
   args[argc] = NULL;
 
   cmd->args = args;
@@ -162,20 +168,18 @@ void handle_type(struct Command *cmd)
 
 void handle_echo(struct Command *cmd)
 {
-  if (cmd->argc == 0)
+  if (cmd->argc < 2)
   {
     return;
   }
 
-  for (int i = 0; i < cmd->argc; i++)
+  for (int i = 1; i < cmd->argc; i++)
   {
-    if (i == 0)
+    if (i == 1)
       printf("%s ", cmd->args[i]);
     else
       printf(" %s", cmd->args[i]);
   }
-
-  printf("\n");
 }
 
 void handle_not_found(struct Command *cmd)
