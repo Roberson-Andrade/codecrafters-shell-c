@@ -144,21 +144,19 @@ void handle_type(struct Command *cmd)
   }
 
   char *command = cmd->args[1];
+  char *command_path = search_for_command_in_path(command);
 
   if (is_shell_command(command) == 1)
   {
     printf("%s is a shell builtin", command);
   }
+  else if (command_path != NULL)
+  {
+    printf("%s is %s", command, command_path);
+  }
   else
   {
-    if (cmd->path != NULL)
-    {
-      printf("%s is %s", command, cmd->path);
-    }
-    else
-    {
-      printf("%s: not found", command);
-    }
+    printf("%s: not found", command);
   }
 }
 
