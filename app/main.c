@@ -190,7 +190,7 @@ void handle_echo(struct Command *cmd)
 
 void handle_not_found(struct Command *cmd)
 {
-  printf("%s: command not found", cmd->name);
+  printf("%s: command not found\n", cmd->name);
 }
 
 void handle_external_command(struct Command *cmd)
