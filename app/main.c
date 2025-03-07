@@ -224,12 +224,7 @@ int main()
 
     int should_print_new_line = 1;
 
-    if (cmd->path != NULL)
-    {
-      should_print_new_line = 0;
-      handle_external_command(cmd);
-    }
-    else if (!strcmp(cmd->name, EXIT_COMMAND))
+    if (!strcmp(cmd->name, EXIT_COMMAND))
     {
       handle_exit();
     }
@@ -241,6 +236,11 @@ int main()
     {
       handle_echo(cmd);
     }
+    else if (cmd->path != NULL)
+    {
+      should_print_new_line = 0;
+      handle_external_command(cmd);
+    }
     else
     {
       handle_not_found(cmd);
@@ -248,9 +248,9 @@ int main()
 
     free_command(cmd);
 
-    if(should_print_new_line)
+    if (should_print_new_line)
       printf("\n");
-      
+
     printf("$ ");
   }
 
