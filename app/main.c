@@ -10,7 +10,9 @@
 #define TYPE_COMMAND "type"
 #define PWD_COMMAND "pwd"
 
-const char *SHELL_COMMANDS[4] = {EXIT_COMMAND, ECHO_COMMAND, TYPE_COMMAND, PWD_COMMAND};
+#define BUILTIN_LENGTH 4
+
+const char *SHELL_COMMANDS[BUILTIN_LENGTH] = {EXIT_COMMAND, ECHO_COMMAND, TYPE_COMMAND, PWD_COMMAND};
 
 struct Command
 {
@@ -99,7 +101,7 @@ int is_shell_command(const char *input)
 {
   int result = 0;
 
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < BUILTIN_LENGTH; i++)
   {
     if (!strncmp(input, SHELL_COMMANDS[i], strlen(SHELL_COMMANDS[i])))
     {
