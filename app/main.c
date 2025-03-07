@@ -9,10 +9,11 @@
 #define ECHO_COMMAND "echo"
 #define TYPE_COMMAND "type"
 #define PWD_COMMAND "pwd"
+#define CD_COMMAND "cd"
 
-#define BUILTIN_LENGTH 4
+#define BUILTIN_LENGTH 5
 
-const char *SHELL_COMMANDS[BUILTIN_LENGTH] = {EXIT_COMMAND, ECHO_COMMAND, TYPE_COMMAND, PWD_COMMAND};
+const char *SHELL_COMMANDS[BUILTIN_LENGTH] = {EXIT_COMMAND, ECHO_COMMAND, TYPE_COMMAND, PWD_COMMAND, CD_COMMAND};
 
 struct Command
 {
@@ -157,15 +158,15 @@ void handle_type(struct Command *cmd)
 
   if (is_shell_command(command) == 1)
   {
-    printf("%s is a shell builtin", command);
+    printf("%s is a shell builtin\n", command);
   }
   else if (command_path != NULL)
   {
-    printf("%s is %s", command, command_path);
+    printf("%s is %s\n", command, command_path);
   }
   else
   {
-    printf("%s: not found", command);
+    printf("%s: not found\n", command);
   }
 }
 
@@ -183,6 +184,8 @@ void handle_echo(struct Command *cmd)
     else
       printf(" %s", cmd->args[i]);
   }
+
+  printf("\n");
 }
 
 void handle_not_found(struct Command *cmd)
@@ -212,9 +215,24 @@ void handle_pwd(struct Command *cmd)
 {
   char *path = getcwd(NULL, 0);
 
-  printf("%s", path);
+  printf("%s\n", path);
 
   free(path);
+}
+
+void handle_cd(struct Command *cmd)
+{
+  if (cmd->argc < 2)
+  {
+    return;
+  }
+
+  char *path = cmd->args[1];
+
+  if (chdir(path) == -1)
+  {
+    printf("cd: %s: No such file or directory\n", path);
+  }
 }
 
 int main()
@@ -235,8 +253,6 @@ int main()
 
     cmd->path = search_for_command_in_path(cmd->name);
 
-    int should_print_new_line = 1;
-
     if (!strcmp(cmd->name, EXIT_COMMAND))
     {
       handle_exit();
@@ -253,9 +269,12 @@ int main()
     {
       handle_pwd(cmd);
     }
+    else if (!strcmp(cmd->name, CD_COMMAND))
+    {
+      handle_cd(cmd);
+    }
     else if (cmd->path != NULL)
     {
-      should_print_new_line = 0;
       handle_external_command(cmd);
     }
     else
@@ -264,9 +283,6 @@ int main()
     }
 
     free_command(cmd);
-
-    if (should_print_new_line)
-      printf("\n");
 
     printf("$ ");
   }
