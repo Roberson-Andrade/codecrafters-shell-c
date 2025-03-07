@@ -8,8 +8,9 @@
 #define EXIT_COMMAND "exit"
 #define ECHO_COMMAND "echo"
 #define TYPE_COMMAND "type"
+#define PWD_COMMAND "pwd"
 
-const char *SHELL_COMMANDS[3] = {EXIT_COMMAND, ECHO_COMMAND, TYPE_COMMAND};
+const char *SHELL_COMMANDS[4] = {EXIT_COMMAND, ECHO_COMMAND, TYPE_COMMAND, PWD_COMMAND};
 
 struct Command
 {
@@ -205,6 +206,15 @@ void handle_external_command(struct Command *cmd)
   waitpid(pid, NULL, 0);
 }
 
+void handle_pwd(struct Command *cmd)
+{
+  char *path = getcwd(NULL, 0);
+
+  printf("%s", path);
+
+  free(path);
+}
+
 int main()
 {
   // Flush after every printf
@@ -236,6 +246,10 @@ int main()
     else if (!strcmp(cmd->name, ECHO_COMMAND))
     {
       handle_echo(cmd);
+    }
+    else if (!strcmp(cmd->name, PWD_COMMAND))
+    {
+      handle_pwd(cmd);
     }
     else if (cmd->path != NULL)
     {
