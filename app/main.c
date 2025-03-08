@@ -23,48 +23,60 @@ struct Command
   int argc;
 };
 
+char **strspl(char *input, char *separator, int *counter)
+{
+  size_t capacity = 5;
+
+  char *token = strtok(input, separator);
+  char **items = malloc(capacity * sizeof(char *));
+  *counter = 0;
+
+  while (token != NULL)
+  {
+    if (*counter >= (int)capacity)
+    {
+      capacity *= 2;
+      items = realloc(items, capacity * sizeof(char *));
+    }
+
+    char *item = malloc(strlen(token) + 1);
+    strcpy(item, token);
+
+    items[(*counter)++] = item;
+
+    token = strtok(NULL, separator);
+  }
+
+  if (*counter >= (int)capacity)
+  {
+    capacity++;
+    items = realloc(items, capacity * sizeof(char *));
+  }
+
+  items[*counter] = NULL;
+
+  return items;
+}
+
+void free_strspl(char **input)
+{
+  for (int i = 0; input[i] != NULL; i++)
+  {
+    free(input[i]);
+  }
+
+  free(input);
+}
+
 struct Command *parse_command(char *input)
 {
   struct Command *cmd = malloc(sizeof(struct Command));
 
-  size_t capacity = 5;
   int argc = 0;
 
-  char **args = malloc(capacity * sizeof(char *));
+  char **args = strspl(input, " ", &argc);
 
-  char *token = strtok(input, " ");
-
-  while (token != NULL)
-  {
-    if (argc == (int)capacity)
-    {
-      capacity *= 2;
-      args = realloc(args, capacity * sizeof(char *));
-    }
-
-    char *token_ptr = malloc(strlen(token) + 1);
-    strcpy(token_ptr, token);
-
-    if (argc == 0)
-    {
-      cmd->name = token_ptr;
-    }
-
-    args[argc] = token_ptr;
-
-    argc++;
-
-    token = strtok(NULL, " ");
-  }
-
-  if (argc == (int)capacity)
-  {
-    capacity++;
-    args = realloc(args, capacity * sizeof(char *));
-  }
-
-  args[argc] = NULL;
-
+  cmd->name = args[0];
   cmd->args = args;
   cmd->argc = argc;
 
@@ -76,13 +88,8 @@ void free_command(struct Command *cmd)
   if (cmd == NULL)
     return;
 
-  for (int i = 0; i < cmd->argc; i++)
-  {
-    free(cmd->args[i]);
-  }
-
+  free_strspl(cmd->args);
   free(cmd->path);
-
   free(cmd);
 }
 
@@ -211,13 +218,50 @@ void handle_external_command(struct Command *cmd)
   waitpid(pid, NULL, 0);
 }
 
-void handle_pwd(struct Command *cmd)
+void handle_pwd()
 {
   char *path = getcwd(NULL, 0);
 
   printf("%s\n", path);
 
   free(path);
+}
+
+void handle_absolute_path(char *path)
+{
+  if (chdir(path) == -1)
+  {
+    printf("cd: %s: No such file or directory\n", path);
+  }
+}
+
+void handle_relative_path(char *path)
+{
+  char *pwd = getcwd(NULL, 0);
+
+  if (!strncmp(path, "./", 2) || strncmp(path, "..", 2) != 0)
+  {
+    char *new_pwd = malloc(strlen(pwd) + strlen(path) + 2);
+
+    if (!strncmp(path, "./", 2))
+    {
+      path = path + 2;
+    }
+
+    strcpy(new_pwd, pwd);
+    strcat(new_pwd, "/");
+    strcat(new_pwd, path);
+    printf("%s", new_pwd);
+
+    if (chdir(new_pwd) == -1)
+    {
+      printf("cd: %s: No such file or directory\n", path);
+    }
+
+    free(new_pwd);
+    free(pwd);
+    return;
+  }
 }
 
 void handle_cd(struct Command *cmd)
@@ -229,9 +273,13 @@ void handle_cd(struct Command *cmd)
 
   char *path = cmd->args[1];
 
-  if (chdir(path) == -1)
+  if (!strncmp(path, "/", 1))
   {
-    printf("cd: %s: No such file or directory\n", path);
+    handle_absolute_path(path);
+  }
+  else
+  {
+    handle_relative_path(path);
   }
 }
 
@@ -267,7 +315,7 @@ int main()
     }
     else if (!strcmp(cmd->name, PWD_COMMAND))
     {
-      handle_pwd(cmd);
+      handle_pwd();
     }
     else if (!strcmp(cmd->name, CD_COMMAND))
     {
