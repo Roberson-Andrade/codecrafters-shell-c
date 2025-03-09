@@ -68,13 +68,99 @@ void free_strspl(char **input)
   free(input);
 }
 
+char **tokenize(char *input, int *counter)
+{
+  char *current = input;
+  size_t capacity = 5;
+  char **lexemes = malloc(capacity * sizeof(char *));
+
+  while (*current != '\0')
+  {
+    if (*current == ' ')
+    {
+      current++;
+      continue;
+    };
+
+    if (*current == '\'')
+    {
+      int i = 0;
+      size_t quotes_capacity = 5;
+      char *quotes = malloc(quotes_capacity * sizeof(char));
+      current++;
+
+      do
+      {
+        quotes[i] = *current;
+
+        current++;
+        i++;
+
+        if (*current == '\0')
+        {
+          printf("Error: Non terminated quotes\n");
+          return NULL;
+        }
+
+        if (i >= (int)quotes_capacity)
+        {
+          quotes_capacity *= 2;
+          quotes = realloc(quotes, quotes_capacity * sizeof(char));
+        }
+
+      } while (*current != '\'');
+
+      quotes[i] = '\0';
+      lexemes[(*counter)++] = quotes;
+      current++;
+    }
+    else
+    {
+      size_t lexem_capacity = 5;
+      char *lexem = malloc(lexem_capacity * sizeof(char));
+
+      int i = 0;
+
+      do
+      {
+        lexem[i] = *current;
+
+        current++;
+        i++;
+
+        if (*current == '\0')
+        {
+          break;
+        }
+
+        if (i >= (int)lexem_capacity)
+        {
+          lexem_capacity *= 2;
+          lexem = realloc(lexem, lexem_capacity * sizeof(char));
+        }
+      } while (*current != ' ');
+
+      lexem[i] = '\0';
+      lexemes[(*counter)++] = lexem;
+    }
+
+    if (*counter >= (int)capacity)
+    {
+      capacity *= 2;
+      lexemes = realloc(lexemes, capacity * sizeof(char *));
+    }
+  }
+
+  return lexemes;
+}
+
 struct Command *parse_command(char *input)
 {
   struct Command *cmd = malloc(sizeof(struct Command));
 
   int argc = 0;
 
-  char **args = strspl(input, " ", &argc);
+  char **args = tokenize(input, &argc);
 
   cmd->name = args[0];
   cmd->args = args;
@@ -235,10 +321,12 @@ void handle_cd(struct Command *cmd)
   }
   char *path = cmd->args[1];
 
-  if(!strcmp(path, "~")) {
+  if (!strcmp(path, "~"))
+  {
     char *home = strdup(getenv("HOME"));
-    
-    if(home == NULL) return;
+
+    if (home == NULL)
+      return;
 
     path = home;
   }
