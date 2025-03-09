@@ -233,8 +233,15 @@ void handle_cd(struct Command *cmd)
   {
     return;
   }
-
   char *path = cmd->args[1];
+
+  if(!strcmp(path, "~")) {
+    char *home = strdup(getenv("HOME"));
+    
+    if(home == NULL) return;
+
+    path = home;
+  }
 
   if (chdir(path) == -1)
   {
