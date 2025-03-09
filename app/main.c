@@ -227,43 +227,6 @@ void handle_pwd()
   free(path);
 }
 
-void handle_absolute_path(char *path)
-{
-  if (chdir(path) == -1)
-  {
-    printf("cd: %s: No such file or directory\n", path);
-  }
-}
-
-void handle_relative_path(char *path)
-{
-  char *pwd = getcwd(NULL, 0);
-
-  if (!strncmp(path, "./", 2) || strncmp(path, "..", 2) != 0)
-  {
-    char *new_pwd = malloc(strlen(pwd) + strlen(path) + 2);
-
-    if (!strncmp(path, "./", 2))
-    {
-      path = path + 2;
-    }
-
-    strcpy(new_pwd, pwd);
-    strcat(new_pwd, "/");
-    strcat(new_pwd, path);
-    printf("%s", new_pwd);
-
-    if (chdir(new_pwd) == -1)
-    {
-      printf("cd: %s: No such file or directory\n", path);
-    }
-
-    free(new_pwd);
-    free(pwd);
-    return;
-  }
-}
-
 void handle_cd(struct Command *cmd)
 {
   if (cmd->argc < 2)
@@ -273,13 +236,9 @@ void handle_cd(struct Command *cmd)
 
   char *path = cmd->args[1];
 
-  if (!strncmp(path, "/", 1))
+  if (chdir(path) == -1)
   {
-    handle_absolute_path(path);
-  }
-  else
-  {
-    handle_relative_path(path);
+    printf("cd: %s: No such file or directory\n", path);
   }
 }
 
