@@ -20,6 +20,7 @@ struct Command
   char *name;
   char **args;
   char *path;
+  char *raw_args;
   int argc;
 };
 
@@ -165,6 +166,7 @@ struct Command *parse_command(char *input)
   cmd->name = args[0];
   cmd->args = args;
   cmd->argc = argc;
+  cmd->raw_args = input + strlen(cmd->name) + 1;
 
   return cmd;
 }
@@ -270,12 +272,11 @@ void handle_echo(struct Command *cmd)
     return;
   }
 
-  for (int i = 1; i < cmd->argc; i++)
+  for (int i = 1; i < cmd->raw_args[i] != '\0'; i++)
   {
-    if (i == 1)
-      printf("%s", cmd->args[i]);
-    else
-      printf(" %s", cmd->args[i]);
+    if (cmd->raw_args[i] == '\'')
+      continue;
+    printf("%c", cmd->raw_args[i]);
   }
 
   printf("\n");
