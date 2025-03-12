@@ -24,14 +24,70 @@ struct Command
   int argc;
 };
 
-void free_tokens(char **input)
+char *tokenize_single_quotes(char **current)
 {
-  for (int i = 0; input[i] != NULL; i++)
+  size_t quotes_capacity = INITIAL_CAPACITY;
+  char *quotes = malloc(quotes_capacity * sizeof(char));
+
+  int i = 0;
+  (*current)++; // skip '
+
+  while (**current != '\'' && **current != '\0')
   {
-    free(input[i]);
+    quotes[i++] = **current;
+    (*current)++;
+
+    if (**current == '\0')
+    {
+      printf("Error: Non terminated quotes\n");
+      return NULL;
+    }
+
+    if (i >= (int)quotes_capacity)
+    {
+      quotes_capacity *= 2;
+      quotes = realloc(quotes, quotes_capacity * sizeof(char));
+    }
+
+    if (**current == '\'' && *(*current + 1) == '\'')
+    {
+      *current += 2;
+    }
   }
 
-  free(input);
+  quotes[i] = '\0';
+  (*current)++;
+
+  return quotes;
+}
+
+char *tokenize_word(char **current)
+{
+  size_t word_capacity = INITIAL_CAPACITY;
+  char *word = malloc(word_capacity * sizeof(char));
+
+  int i = 0;
+
+  while (**current != ' ' && **current != '\0')
+  {
+    word[i++] = **current;
+    (*current)++;
+
+    if (**current == '\0')
+    {
+      break;
+    }
+
+    if (i >= (int)word_capacity)
+    {
+      word_capacity *= 2;
+      word = realloc(word, word_capacity * sizeof(char));
+    }
+  }
+
+  word[i] = '\0';
+
+  return word;
 }
 
 char **tokenize(char *input, int *counter)
@@ -61,73 +117,15 @@ char **tokenize(char *input, int *counter)
 
     if (*current == '\'')
     {
-      size_t quotes_capacity = INITIAL_CAPACITY;
-      char *quotes = malloc(quotes_capacity * sizeof(char));
-
-      int i = 0;
-      current++; // skip '
-
-      while (*current != '\'' && *current != '\0')
-      {
-        quotes[i++] = *current;
-        current++;
-
-        if (*current == '\0')
-        {
-          printf("Error: Non terminated quotes\n");
-          return NULL;
-        }
-
-        if (i >= (int)quotes_capacity)
-        {
-          quotes_capacity *= 2;
-          quotes = realloc(quotes, quotes_capacity * sizeof(char));
-        }
-
-        if (*current == '\'' && *(current + 1) == '\'')
-        {
-          current += 2;
-        }
-      }
-
-      quotes[i] = '\0';
-      tokens[(*counter)++] = quotes;
-      current++;
+      tokens[(*counter)++] = tokenize_single_quotes(&current);
     }
     else
     {
-      size_t word_capacity = INITIAL_CAPACITY;
-      char *word = malloc(word_capacity * sizeof(char));
-
-      int i = 0;
-
-      while (*current != ' ' && *current != '\0')
-      {
-        word[i++] = *current;
-        current++;
-
-        if (*current == '\0')
-        {
-          break;
-        }
-
-        if (i >= (int)word_capacity)
-        {
-          word_capacity *= 2;
-          word = realloc(word, word_capacity * sizeof(char));
-        }
-      }
-
-      word[i] = '\0';
-      tokens[(*counter)++] = word;
-    }
-
-    if (*counter >= (int)tokens_capacity)
-    {
-      tokens_capacity *= 2;
-      tokens = realloc(tokens, tokens_capacity * sizeof(char *));
+      tokens[(*counter)++] = tokenize_word(&current);
     }
   }
+
+  tokens[(*counter)] = NULL;
 
   return tokens;
 }
@@ -152,7 +150,12 @@ void free_command(struct Command *cmd)
   if (cmd == NULL)
     return;
 
-  free_tokens(cmd->args);
+  for (int i = 0; i < cmd->argc; i++)
+  {
+    free(cmd->args[i]);
+  }
+
+  free(cmd->args);
   free(cmd->path);
   free(cmd);
 }
