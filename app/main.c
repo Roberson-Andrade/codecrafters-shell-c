@@ -12,6 +12,7 @@
 #define CD_COMMAND "cd"
 
 #define BUILTIN_LENGTH 5
+#define INITIAL_CAPACITY 5
 
 const char *SHELL_COMMANDS[BUILTIN_LENGTH] = {EXIT_COMMAND, ECHO_COMMAND, TYPE_COMMAND, PWD_COMMAND, CD_COMMAND};
 
@@ -20,46 +21,10 @@ struct Command
   char *name;
   char **args;
   char *path;
-  char *raw_args;
   int argc;
 };
 
-char **strspl(char *input, char *separator, int *counter)
-{
-  size_t capacity = 5;
-
-  char *token = strtok(input, separator);
-  char **items = malloc(capacity * sizeof(char *));
-  *counter = 0;
-
-  while (token != NULL)
-  {
-    if (*counter >= (int)capacity)
-    {
-      capacity *= 2;
-      items = realloc(items, capacity * sizeof(char *));
-    }
-
-    char *item = malloc(strlen(token) + 1);
-    strcpy(item, token);
-
-    items[(*counter)++] = item;
-
-    token = strtok(NULL, separator);
-  }
-
-  if (*counter >= (int)capacity)
-  {
-    capacity++;
-    items = realloc(items, capacity * sizeof(char *));
-  }
-
-  items[*counter] = NULL;
-
-  return items;
-}
-
-void free_strspl(char **input)
+void free_tokens(char **input)
 {
   for (int i = 0; input[i] != NULL; i++)
   {
@@ -72,30 +37,40 @@ void free_strspl(char **input)
 char **tokenize(char *input, int *counter)
 {
   char *current = input;
-  size_t capacity = 5;
-  char **lexemes = malloc(capacity * sizeof(char *));
+  size_t tokens_capacity = INITIAL_CAPACITY;
+  char **tokens = malloc(tokens_capacity * sizeof(char *));
 
-  while (*current != '\0')
+  if (!tokens)
+    return NULL;
+
+  while (*current != '\0' && *current != '\n')
   {
-    if (*current == ' ')
+    while (*current == ' ')
     {
       current++;
-      continue;
     };
+
+    if (*counter >= (int)tokens_capacity)
+    {
+      tokens_capacity *= 2;
+      tokens = realloc(tokens, tokens_capacity * sizeof(char *));
+
+      if (!tokens)
+        return NULL;
+    }
 
     if (*current == '\'')
     {
-      int i = 0;
-      size_t quotes_capacity = 5;
+      size_t quotes_capacity = INITIAL_CAPACITY;
       char *quotes = malloc(quotes_capacity * sizeof(char));
-      current++;
 
-      do
+      int i = 0;
+      current++; // skip '
+
+      while (*current != '\'' && *current != '\0')
       {
-        quotes[i] = *current;
-
+        quotes[i++] = *current;
         current++;
-        i++;
 
         if (*current == '\0')
         {
@@ -109,50 +84,52 @@ char **tokenize(char *input, int *counter)
           quotes = realloc(quotes, quotes_capacity * sizeof(char));
         }
 
-      } while (*current != '\'');
+        if (*current == '\'' && *(current + 1) == '\'')
+        {
+          current += 2;
+        }
+      }
 
       quotes[i] = '\0';
-      lexemes[(*counter)++] = quotes;
+      tokens[(*counter)++] = quotes;
       current++;
     }
     else
     {
-      size_t lexem_capacity = 5;
-      char *lexem = malloc(lexem_capacity * sizeof(char));
+      size_t word_capacity = INITIAL_CAPACITY;
+      char *word = malloc(word_capacity * sizeof(char));
 
       int i = 0;
 
-      do
+      while (*current != ' ' && *current != '\0')
       {
-        lexem[i] = *current;
-
+        word[i++] = *current;
         current++;
-        i++;
 
         if (*current == '\0')
         {
           break;
         }
 
-        if (i >= (int)lexem_capacity)
+        if (i >= (int)word_capacity)
         {
-          lexem_capacity *= 2;
-          lexem = realloc(lexem, lexem_capacity * sizeof(char));
+          word_capacity *= 2;
+          word = realloc(word, word_capacity * sizeof(char));
         }
-      } while (*current != ' ');
+      }
 
-      lexem[i] = '\0';
-      lexemes[(*counter)++] = lexem;
+      word[i] = '\0';
+      tokens[(*counter)++] = word;
     }
 
-    if (*counter >= (int)capacity)
+    if (*counter >= (int)tokens_capacity)
     {
-      capacity *= 2;
-      lexemes = realloc(lexemes, capacity * sizeof(char *));
+      tokens_capacity *= 2;
+      tokens = realloc(tokens, tokens_capacity * sizeof(char *));
     }
   }
 
-  return lexemes;
+  return tokens;
 }
 
 struct Command *parse_command(char *input)
@@ -166,7 +143,6 @@ struct Command *parse_command(char *input)
   cmd->name = args[0];
   cmd->args = args;
   cmd->argc = argc;
-  cmd->raw_args = input + strlen(cmd->name) + 1;
 
   return cmd;
 }
@@ -176,7 +152,7 @@ void free_command(struct Command *cmd)
   if (cmd == NULL)
     return;
 
-  free_strspl(cmd->args);
+  free_tokens(cmd->args);
   free(cmd->path);
   free(cmd);
 }
@@ -272,11 +248,12 @@ void handle_echo(struct Command *cmd)
     return;
   }
 
-  for (int i = 1; i < cmd->raw_args[i] != '\0'; i++)
+  for (int i = 1; i < cmd->argc; i++)
   {
-    if (cmd->raw_args[i] == '\'')
-      continue;
-    printf("%c", cmd->raw_args[i]);
+    if (i == 1)
+      printf("%s", cmd->args[i]);
+    else
+      printf(" %s", cmd->args[i]);
   }
 
   printf("\n");
