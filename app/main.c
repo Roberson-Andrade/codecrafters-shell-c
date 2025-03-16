@@ -105,11 +105,27 @@ char *tokenize_word(char **current)
 
   int i = 0;
 
-  while (**current != ' ' && **current != '\0')
+  char previous;
+
+  while (**current != '\0')
   {
+
+    if (previous != '\\')
+    {      if (**current == ' ')
+      {
+        break;
+      }
+
+      if (**current == '\\')
+      {
+        previous = **current;
+        (*current)++;
+        continue;
+      }
+    }
+
     word[i++] = **current;
     (*current)++;
-
     if (**current == '\0')
     {
       break;
@@ -120,6 +136,8 @@ char *tokenize_word(char **current)
       word_capacity *= 2;
       word = realloc(word, word_capacity * sizeof(char));
     }
+
+    previous = *((*current) - 1);
   }
 
   word[i] = '\0';
