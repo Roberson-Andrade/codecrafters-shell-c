@@ -384,7 +384,6 @@ int main()
 
   printf("$ ");
 
-  // Wait for user input
   char input[100];
 
   while (fgets(input, 100, stdin) != NULL)
