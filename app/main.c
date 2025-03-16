@@ -61,6 +61,43 @@ char *tokenize_single_quotes(char **current)
   return quotes;
 }
 
+char *tokenize_double_quotes(char **current)
+{
+  size_t quotes_capacity = INITIAL_CAPACITY;
+  char *quotes = malloc(quotes_capacity * sizeof(char));
+
+  int i = 0;
+  (*current)++; // skip '
+
+  while (**current != '\"' && **current != '\0')
+  {
+    quotes[i++] = **current;
+    (*current)++;
+
+    if (**current == '\0')
+    {
+      printf("Error: Non terminated quotes\n");
+      return NULL;
+    }
+
+    if (i >= (int)quotes_capacity)
+    {
+      quotes_capacity *= 2;
+      quotes = realloc(quotes, quotes_capacity * sizeof(char));
+    }
+
+    if (**current == '\"' && *(*current + 1) == '\"')
+    {
+      *current += 2;
+    }
+  }
+
+  quotes[i] = '\0';
+  (*current)++;
+
+  return quotes;
+}
+
 char *tokenize_word(char **current)
 {
   size_t word_capacity = INITIAL_CAPACITY;
@@ -118,6 +155,10 @@ char **tokenize(char *input, int *counter)
     if (*current == '\'')
     {
       tokens[(*counter)++] = tokenize_single_quotes(&current);
+    }
+    else if (*current == '\"')
+    {
+      tokens[(*counter)++] = tokenize_double_quotes(&current);
     }
     else
     {
