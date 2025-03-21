@@ -1,4 +1,4 @@
-[![progress-banner](https://backend.codecrafters.io/progress/shell/3abb84da-1e5f-46e1-89e1-b4b47c374133)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+[![progress-banner](https://backend.codecrafters.io/progress/shell/3abb84da-1e5f-46e1-89e1-b4b47c374133)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)!
 
 This is a starting point for C solutions to the
 ["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
