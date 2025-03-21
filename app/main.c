@@ -24,127 +24,6 @@ struct Command
   int argc;
 };
 
-char *tokenize_single_quotes(char **current)
-{
-  size_t quotes_capacity = INITIAL_CAPACITY;
-  char *quotes = malloc(quotes_capacity * sizeof(char));
-
-  int i = 0;
-  (*current)++; // skip '
-
-  while (**current != '\'' && **current != '\0')
-  {
-    quotes[i++] = **current;
-    (*current)++;
-
-    if (**current == '\0')
-    {
-      printf("Error: Non terminated quotes\n");
-      return NULL;
-    }
-
-    if (i >= (int)quotes_capacity)
-    {
-      quotes_capacity *= 2;
-      quotes = realloc(quotes, quotes_capacity * sizeof(char));
-    }
-
-    if (**current == '\'' && *(*current + 1) == '\'')
-    {
-      *current += 2;
-    }
-  }
-
-  quotes[i] = '\0';
-  (*current)++;
-
-  return quotes;
-}
-
-char *tokenize_double_quotes(char **current)
-{
-  size_t quotes_capacity = INITIAL_CAPACITY;
-  char *quotes = malloc(quotes_capacity * sizeof(char));
-
-  int i = 0;
-  (*current)++; // skip '
-
-  while (**current != '\"' && **current != '\0')
-  {
-    quotes[i++] = **current;
-    (*current)++;
-
-    if (**current == '\0')
-    {
-      printf("Error: Non terminated quotes\n");
-      return NULL;
-    }
-
-    if (i >= (int)quotes_capacity)
-    {
-      quotes_capacity *= 2;
-      quotes = realloc(quotes, quotes_capacity * sizeof(char));
-    }
-
-    if (**current == '\"' && *(*current + 1) == '\"')
-    {
-      *current += 2;
-    }
-  }
-
-  quotes[i] = '\0';
-  (*current)++;
-
-  return quotes;
-}
-
-char *tokenize_word(char **current)
-{
-  size_t word_capacity = INITIAL_CAPACITY;
-  char *word = malloc(word_capacity * sizeof(char));
-
-  int i = 0;
-
-  char previous;
-
-  while (**current != '\0')
-  {
-
-    if (previous != '\\')
-    {      if (**current == ' ')
-      {
-        break;
-      }
-
-      if (**current == '\\')
-      {
-        previous = **current;
-        (*current)++;
-        continue;
-      }
-    }
-
-    word[i++] = **current;
-    (*current)++;
-    if (**current == '\0')
-    {
-      break;
-    }
-
-    if (i >= (int)word_capacity)
-    {
-      word_capacity *= 2;
-      word = realloc(word, word_capacity * sizeof(char));
-    }
-
-    previous = *((*current) - 1);
-  }
-
-  word[i] = '\0';
-
-  return word;
-}
-
 char **tokenize(char *input, int *counter)
 {
   char *current = input;
@@ -156,10 +35,11 @@ char **tokenize(char *input, int *counter)
 
   while (*current != '\0' && *current != '\n')
   {
-    while (*current == ' ')
+    if (*current == ' ')
     {
       current++;
-    };
+      continue;
+    }
 
     if (*counter >= (int)tokens_capacity)
     {
@@ -170,18 +50,80 @@ char **tokenize(char *input, int *counter)
         return NULL;
     }
 
-    if (*current == '\'')
+    int in_double_quotes = 0;
+    int in_single_quotes = 0;
+
+    size_t token_capacity = INITIAL_CAPACITY;
+    char *token = malloc(token_capacity * sizeof(char));
+    int token_size = 0;
+
+    while (*current != '\0' && *current != '\n')
     {
-      tokens[(*counter)++] = tokenize_single_quotes(&current);
+      if (token_size >= (int)token_capacity)
+      {
+        token_capacity *= 2;
+        token = realloc(token, token_capacity * sizeof(char));
+
+        if (!token)
+        {
+          free(tokens);
+          return NULL;
+        }
+      }
+
+      if (*current == '"' && !in_single_quotes)
+      {
+        in_double_quotes = !in_double_quotes;
+
+        current++;
+        continue;
+      }
+
+      if (*current == '\'' && !in_double_quotes)
+      {
+        in_single_quotes = !in_single_quotes;
+
+        current++;
+        continue;
+      }
+
+      if (!in_double_quotes && !in_single_quotes)
+      {
+        if (*current == ' ')
+        {
+          break;
+        }
+
+        if (*current == '\\')
+        {
+          current++;
+
+          if (*current == '\0' || *current == '\n')
+          {
+            break;
+          }
+        }
+      }
+
+      if (in_double_quotes)
+      {
+        char *next = current + 1;
+        if (*current == '\\' && (*next == '$' || *next == '\\' || *next == '"'))
+        {
+          current++;
+
+          if (*current == '\0' || *current == '\n')
+          {
+            break;
+          }
+        }
+      }
+
+      token[token_size++] = *current;
+      current++;
     }
-    else if (*current == '\"')
-    {
-      tokens[(*counter)++] = tokenize_double_quotes(&current);
-    }
-    else
-    {
-      tokens[(*counter)++] = tokenize_word(&current);
-    }
+    token[token_size] = '\0';
+    tokens[(*counter)++] = token;
   }
 
   tokens[(*counter)] = NULL;
